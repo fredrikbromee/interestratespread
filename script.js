@@ -1,13 +1,14 @@
 
-var currentData = null;
+var currentData = [];
 var colorScale = null;
 
 // Läs in CSV-filen
 d3.text('rates.csv').then(rawData => {
-    const rows = rawData.trim().split('\n'); // Dela upp rader
-    const headers = rows[0].split(' '); // Första raden som headers
-    const data = rows.slice(1).map(row => {
-        const values = row.split(' '); // Dela på mellanslag
+    const rows = rawData.trim().split('\n');
+    const headers = rows[0].split(' ');
+
+    let data = rows.slice(1).map(row => {
+        const values = row.split(' ');
         return {
             bank: values[0],
             date: new Date(values[1].slice(0, 4), values[1].slice(4, 6) - 1, values[1].slice(6)),
@@ -15,28 +16,57 @@ d3.text('rates.csv').then(rawData => {
         };
     });
 
-    // Filtrera ut Riksbankens ränta
-    const riksbankRates = data.filter(d => d.bank === 'Riksbanken');
+    // Sort by date
+    data.sort((a, b) => a.date - b.date);
 
-    // Lägg till räntenetto
+    const riksbankRates = data.filter(d => d.bank === 'Riksbanken');
     const banks = [...new Set(data.map(d => d.bank).filter(bank => bank !== 'Riksbanken'))];
+
+    let currentRiksRate = null;
+
+    // Iterate through all data in chronological order
+    for (const d of data) {
+        if (d.bank === 'Riksbanken') {
+            // Update current known Riksbanken rate
+            currentRiksRate = d.rate;
+        } else {
+            // For bank data points, use last known Riksbanken rate if available
+            let netRate = currentRiksRate !== null ? d.rate - currentRiksRate : null;
+            currentData.push({
+                ...d,
+                netRate
+            });
+        }
+    }
+
+    // Add a fictitious "today" data point for each bank to make plotting easier
+    const today = new Date();
+    banks.forEach(bank => {
+        const bankEntries = currentData.filter(d => d.bank === bank);
+        if (bankEntries.length > 0) {
+            const lastEntry = bankEntries[bankEntries.length - 1];
+            if (lastEntry.date < today && currentRiksRate !== null && lastEntry.rate !== null) {
+                // Recalculate netRate with the current Riksbanken rate, not the old netRate
+                const newNetRate = lastEntry.rate - currentRiksRate;
+
+                currentData.push({
+                    bank: bank,
+                    date: today,
+                    rate: lastEntry.rate, 
+                    netRate: newNetRate
+                });
+            }
+        }
+    });
+    console.log(currentData);
+
     colorScale = d3.scaleOrdinal()
         .domain(banks)
         .range(d3.schemeCategory10);
 
-    currentData = data.filter(d => d.bank !== 'Riksbanken').map(bankEntry => {
-        const matchingRiksbank = riksbankRates
-            .filter(r => r.date <= bankEntry.date)
-            .sort((a, b) => b.date - a.date)[0];
-        return {
-            ...bankEntry,
-            netRate: matchingRiksbank ? bankEntry.rate - matchingRiksbank.rate : null,
-        };
-    });
-
     updateChart(currentData, colorScale);
 });
-
+    
 // Skapa en linjediagram-visualisering för räntenetto
 function createVisualization(data, colorScale, width, height) {
     const svg = d3.select('#chart');
@@ -71,11 +101,6 @@ function createVisualization(data, colorScale, width, height) {
     for (const [bank, values] of groupedData) {
         // Sort data by date
         const sortedValues = values.sort((a, b) => a.date - b.date);
-        // Add an extended point to today's date
-        const lastPoint = sortedValues[sortedValues.length - 1];
-        if (lastPoint.date < currentDate) {
-            sortedValues.push({ ...lastPoint, date: currentDate });
-        }
 
         // Use d3.line with curveStepAfter for step effect
         const stepLine = d3.line()
