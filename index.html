@@ -11,15 +11,17 @@
     <div class="container">
         <h1>Interest Rate Spreads</h1>
         <div class="description">
-            This graph shows the historic spread between the Swedish Riksbank's 
+            This graph shows the historic interest rate spread between the Swedish Riksbank's 
             <a href="https://www.riksbank.se/sv/statistik/rantor-och-valutakurser/styrranta-in--och-utlaningsranta/">rate</a>
-            and the advertised 3-month adjustable-rate mortgage offered by Swedish banks. 
-            Theoretically this shows how much money the banks make off of their loans. Note that the actual 
-            rates that customers pay are lower than the advertised rates, as the banks offer discounts.
+            and the advertised 3-month adjustable-rate mortgages offered by Swedish banks. 
+            Theoretically this shows how much money the banks could make on these mortgages. Note that the actual 
+            rates that customers pay should be  lower than the advertised rates, as the banks offer discounts.
         </div>
         
-        <svg id="chart" width="800" height="400"></svg>
-        
+        <div class="chart-container">
+            <svg id="chart"></svg>
+        </div>
+
         <div class="sources">
             <h2>Sources</h2>
             <ul class="source-list">
