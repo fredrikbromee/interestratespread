@@ -16,6 +16,17 @@ d3.text('rates.csv').then(rawData => {
         };
     });
 
+    currentData = calculateNetRates(data);
+    console.log(currentData);
+
+    colorScale = d3.scaleOrdinal()
+        .domain(data)
+        .range(d3.schemeCategory10);
+
+    updateChart(currentData, colorScale);
+});
+    
+function calculateNetRates(data) {
     // Sort by date
     data.sort((a, b) => a.date - b.date);
 
@@ -29,6 +40,23 @@ d3.text('rates.csv').then(rawData => {
         if (d.bank === 'Riksbanken') {
             // Update current known Riksbanken rate
             currentRiksRate = d.rate;
+            // Find last entry for each bank
+            const banks = [...new Set(data.map(d => d.bank).filter(bank => bank !== 'Riksbanken'))];
+            banks.forEach(bank => {
+                const bankEntries = currentData.filter(d => d.bank === bank);
+                if (bankEntries.length > 0) {
+                    const lastEntry = bankEntries[bankEntries.length - 1];
+                    if (lastEntry.netRate !== null) {
+                        currentData.push({
+                            bank: bank,
+                            date: d.date,
+                            rate: lastEntry.rate,
+                            netRate: lastEntry.rate - d.rate,
+                            riksbankChange: true
+                        });
+                    }
+                }
+        });
         } else {
             // For bank data points, use last known Riksbanken rate if available
             let netRate = currentRiksRate !== null ? d.rate - currentRiksRate : null;
@@ -52,21 +80,15 @@ d3.text('rates.csv').then(rawData => {
                 currentData.push({
                     bank: bank,
                     date: today,
-                    rate: lastEntry.rate, 
+                    rate: lastEntry.rate,
                     netRate: newNetRate
                 });
             }
         }
     });
-    console.log(currentData);
+    return currentData;
+}
 
-    colorScale = d3.scaleOrdinal()
-        .domain(banks)
-        .range(d3.schemeCategory10);
-
-    updateChart(currentData, colorScale);
-});
-    
 // Skapa en linjediagram-visualisering för räntenetto
 function createVisualization(data, colorScale, width, height) {
     const svg = d3.select('#chart');
@@ -122,7 +144,7 @@ function createVisualization(data, colorScale, width, height) {
         .enter()
         .append('text')
         .attr('x', width - 150)
-        .attr('y', (d, i) => i * 20 + 10)
+        .attr('y', (d, i) => i * 15)
         .style('fill', 'steelblue')
         .text(d => d)
         .style('font-size', '12px');
