@@ -1,6 +1,14 @@
 var currentData = [];
 var colorScale = null;
 
+// Define fixed colors for each bank
+const bankColors = {
+    'SBAB': '#E41A1C',    // Bright red
+    'SHB': '#377EB8',     // Blue
+    'SEB': '#4DAF4A',     // Green
+    'Swedbank': '#984EA3' // Purple
+};
+
 // Läs in CSV-filen
 d3.text('rates.csv').then(rawData => {
     const rows = rawData.trim().split('\n');
@@ -78,9 +86,10 @@ d3.text('rates.csv').then(rawData => {
         }
     });
 
+    // Create color scale using our fixed colors
     colorScale = d3.scaleOrdinal()
-        .domain(banks)  // Use banks array instead of full data
-        .range(d3.schemeCategory10);
+        .domain(Object.keys(bankColors))
+        .range(Object.values(bankColors));
 
     updateChart(currentData, colorScale);
 });
