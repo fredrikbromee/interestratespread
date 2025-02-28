@@ -4,9 +4,9 @@ var colorScale = null;
 // Define fixed colors for each bank
 const bankColors = {
     'SBAB': '#E41A1C',    // Bright red
-    'SHB': '#377EB8',     // Blue
+    'SHB': '#0066B3',     // Clear blue (traditional bank blue)
     'SEB': '#4DAF4A',     // Green
-    'Swedbank': '#984EA3' // Purple
+    'Swedbank': '#FF8C00'  // Dark orange (close to Swedbank's brand color)
 };
 
 // Läs in CSV-filen
